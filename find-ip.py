@@ -17,47 +17,39 @@ def fetch_ip_for_host(host, ip, output_file, match_word=None, csv_mode=False, cs
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         response = result.stdout
 
+        status_code = "N/A"
+        response_length = len(response)
+
         if match_word:  # Match based on word/phrase
             if match_word in response:
                 status_code = "MATCH FOUND"
-                response_length = len(response)
-                output = (
-                    f"Domain: {host}\n"
-                    f"Status Code: {status_code}\n"
-                    f"Response Received: {response[:100]}...\n"
-                    f"Length: {response_length}\n"
-                    f"Curl Command: {cmd}\n"
-                    "-" * 50 + "\n"
-                )
-                print(Fore.GREEN + output)
-                if csv_mode:
-                    csv_writer.writerow([host, ip, status_code, response[:100], response_length, cmd])
-                else:
-                    with open(output_file, "a") as of:
-                        of.write(output)
         else:  # Match based on HTTP 200 response
             status_line = next((line for line in response.splitlines() if line.startswith("HTTP/")), None)
             if status_line and "200 OK" in status_line:
                 status_code = "200 OK"
-                response_length = len(response)
-                output = (
-                    f"Domain: {host}\n"
-                    f"Status Code: {status_code}\n"
-                    f"Response Received: {response[:100]}...\n"
-                    f"Length: {response_length}\n"
-                    f"Curl Command: {cmd}\n"
-                    "-" * 50 + "\n"
-                )
-                print(Fore.GREEN + output)
-                if csv_mode:
-                    csv_writer.writerow([host, ip, status_code, response[:100], response_length, cmd])
-                else:
-                    with open(output_file, "a") as of:
-                        of.write(output)
+
+        # Print and save output if a match is found or status is 200 OK
+        if status_code != "N/A":
+            output = (
+                f"\n{Fore.BLUE}Domain: {Fore.CYAN}{host}\n"
+                f"{Fore.BLUE}IP: {Fore.CYAN}{ip}\n"
+                f"{Fore.BLUE}Status Code: {Fore.GREEN}{status_code}\n"
+                f"{Fore.BLUE}Response Length: {Fore.MAGENTA}{response_length}\n"
+                f"{Fore.BLUE}Curl Command: {Fore.LIGHTWHITE_EX}{cmd}\n"
+                f"{Style.BRIGHT}{'-' * 50}{Style.RESET_ALL}\n"
+            )
+            print(output)
+
+            if csv_mode:
+                csv_writer.writerow([host, ip, status_code, response_length, cmd])
+            else:
+                with open(output_file, "a") as of:
+                    of.write(output)
+
     except subprocess.TimeoutExpired:
-        print(Fore.RED + f"Timeout: {cmd}")
+        print(Fore.RED + f"\nTimeout: {cmd}\n")
     except Exception as e:
-        print(Fore.RED + f"Error: {e}\nCurl Command: {cmd}")
+        print(Fore.RED + f"\nError: {e}\nCurl Command: {cmd}\n")
 
 def find_correct_ips(domains_file, ips_file, output_file, match_word=None, csv_mode=False):
     """
@@ -74,14 +66,14 @@ def find_correct_ips(domains_file, ips_file, output_file, match_word=None, csv_m
     if csv_mode:
         csv_file = open(output_file, "w", newline="")
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(["Domain", "IP", "Status Code", "Response Preview", "Response Length", "Curl Command"])
+        csv_writer.writerow(["Domain", "IP", "Status Code", "Response Length", "Curl Command"])
 
     def check_domain_ip_pair(domain):
         for ip in ips:
             fetch_ip_for_host(domain, ip, output_file, match_word, csv_mode, csv_writer)
 
     # Use ThreadPoolExecutor for parallel processing
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=25) as executor:
         executor.map(check_domain_ip_pair, domains)
 
     # Close the CSV file if in CSV mode
