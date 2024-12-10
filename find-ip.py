@@ -7,7 +7,7 @@ from colorama import Fore, Style, init
 # Initialize colorama
 init(autoreset=True)
 
-def fetch_ip_for_host(host, ip, output_file, match_word=None, csv_mode=False, csv_writer=None):
+def fetch_ip_for_host(host, ip, output_file, match_word=None, csv_mode=False, csv_writer=None, verbose=False):
     """
     Tries to fetch the domain using the given IP and Host header.
     Logs and outputs real-time results for matching responses.
@@ -27,6 +27,8 @@ def fetch_ip_for_host(host, ip, output_file, match_word=None, csv_mode=False, cs
             status_line = next((line for line in response.splitlines() if line.startswith("HTTP/")), None)
             if status_line and "200 OK" in status_line:
                 status_code = "200 OK"
+            elif verbose and not status_line:
+                print(Fore.YELLOW + f"Debug: No status line received for {host} with IP {ip}")
 
         # Print and save output if a match is found or status is 200 OK
         if status_code != "N/A":
@@ -47,11 +49,15 @@ def fetch_ip_for_host(host, ip, output_file, match_word=None, csv_mode=False, cs
                     of.write(output)
 
     except subprocess.TimeoutExpired:
+        if verbose:
+            print(Fore.RED + f"Debug: Timeout occurred for {host} with IP {ip}")
         print(Fore.RED + f"\nTimeout: {cmd}\n")
     except Exception as e:
+        if verbose:
+            print(Fore.RED + f"Debug: Exception for {host} with IP {ip} - {str(e)}")
         print(Fore.RED + f"\nError: {e}\nCurl Command: {cmd}\n")
 
-def find_correct_ips(domains_file, ips_file, output_file, match_word=None, csv_mode=False):
+def find_correct_ips(domains_file, ips_file, output_file, match_word=None, csv_mode=False, verbose=False):
     """
     Reads domain names and IP addresses, checks which IPs match which domains,
     and outputs results in real time.
@@ -70,7 +76,7 @@ def find_correct_ips(domains_file, ips_file, output_file, match_word=None, csv_m
 
     def check_domain_ip_pair(domain):
         for ip in ips:
-            fetch_ip_for_host(domain, ip, output_file, match_word, csv_mode, csv_writer)
+            fetch_ip_for_host(domain, ip, output_file, match_word, csv_mode, csv_writer, verbose)
 
     # Use ThreadPoolExecutor for parallel processing
     with ThreadPoolExecutor(max_workers=25) as executor:
@@ -87,6 +93,7 @@ def main():
     parser.add_argument("-o", "--output", required=True, help="Path to output file.")
     parser.add_argument("-match", "--match", help="Optional: Word or phrase to match in the response.")
     parser.add_argument("-csv", "--csv", action="store_true", help="Save output in CSV format.")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose/debug output.")
     args = parser.parse_args()
 
     # Clear the output file if not in CSV mode
@@ -94,7 +101,7 @@ def main():
         with open(args.output, "w") as of:
             of.write("")
 
-    find_correct_ips(args.domains, args.ips, args.output, args.match, args.csv)
+    find_correct_ips(args.domains, args.ips, args.output, args.match, args.csv, args.verbose)
 
 if __name__ == "__main__":
     main()
