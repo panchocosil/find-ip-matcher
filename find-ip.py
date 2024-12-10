@@ -19,45 +19,45 @@ def fetch_ip_for_host(host, ip, output_file, match_word=None, csv_mode=False, cs
 
         if match_word:  # Match based on word/phrase
             if match_word in response:
-                status = "MATCH FOUND"
+                status_code = "MATCH FOUND"
                 response_length = len(response)
                 output = (
-                    f"{Fore.GREEN}IP: {Fore.CYAN}{ip}\n"
-                    f"{Fore.GREEN}Domain: {Fore.CYAN}{host}\n"
-                    f"{Fore.GREEN}Status: {Fore.CYAN}{status} for '{match_word}'\n"
-                    f"{Fore.GREEN}Response Received: {Fore.CYAN}{response[:100]}...\n"
-                    f"{Fore.GREEN}Curl Command: {Fore.MAGENTA}{cmd}\n"
-                    f"{Style.BRIGHT}{'-' * 50}{Style.RESET_ALL}\n"
+                    f"Domain: {host}\n"
+                    f"Status Code: {status_code}\n"
+                    f"Response Received: {response[:100]}...\n"
+                    f"Length: {response_length}\n"
+                    f"Curl Command: {cmd}\n"
+                    "-" * 50 + "\n"
                 )
-                print(output, end="")  # Print to terminal
+                print(Fore.GREEN + output)
                 if csv_mode:
-                    csv_writer.writerow([host, ip, status, response[:100], response_length, cmd])
+                    csv_writer.writerow([host, ip, status_code, response[:100], response_length, cmd])
                 else:
                     with open(output_file, "a") as of:
-                        of.write(output)  # Append to output file
+                        of.write(output)
         else:  # Match based on HTTP 200 response
             status_line = next((line for line in response.splitlines() if line.startswith("HTTP/")), None)
             if status_line and "200 OK" in status_line:
-                status = "200 OK"
+                status_code = "200 OK"
                 response_length = len(response)
                 output = (
-                    f"{Fore.GREEN}IP: {Fore.CYAN}{ip}\n"
-                    f"{Fore.GREEN}Domain: {Fore.CYAN}{host}\n"
-                    f"{Fore.GREEN}Status: {Fore.CYAN}{status}\n"
-                    f"{Fore.GREEN}Response Received: {Fore.CYAN}{response[:100]}...\n"
-                    f"{Fore.GREEN}Curl Command: {Fore.MAGENTA}{cmd}\n"
-                    f"{Style.BRIGHT}{'-' * 50}{Style.RESET_ALL}\n"
+                    f"Domain: {host}\n"
+                    f"Status Code: {status_code}\n"
+                    f"Response Received: {response[:100]}...\n"
+                    f"Length: {response_length}\n"
+                    f"Curl Command: {cmd}\n"
+                    "-" * 50 + "\n"
                 )
-                print(output, end="")  # Print to terminal
+                print(Fore.GREEN + output)
                 if csv_mode:
-                    csv_writer.writerow([host, ip, status, response[:100], response_length, cmd])
+                    csv_writer.writerow([host, ip, status_code, response[:100], response_length, cmd])
                 else:
                     with open(output_file, "a") as of:
-                        of.write(output)  # Append to output file
+                        of.write(output)
     except subprocess.TimeoutExpired:
-        print(f"{Fore.RED}Timeout: {cmd}")
+        print(Fore.RED + f"Timeout: {cmd}")
     except Exception as e:
-        print(f"{Fore.RED}Error: {e}\nCurl Command: {cmd}")
+        print(Fore.RED + f"Error: {e}\nCurl Command: {cmd}")
 
 def find_correct_ips(domains_file, ips_file, output_file, match_word=None, csv_mode=False):
     """
@@ -74,7 +74,7 @@ def find_correct_ips(domains_file, ips_file, output_file, match_word=None, csv_m
     if csv_mode:
         csv_file = open(output_file, "w", newline="")
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(["Domain", "IP", "Status", "Response Preview", "Response Length", "Curl Command"])
+        csv_writer.writerow(["Domain", "IP", "Status Code", "Response Preview", "Response Length", "Curl Command"])
 
     def check_domain_ip_pair(domain):
         for ip in ips:
@@ -94,7 +94,7 @@ def main():
     parser.add_argument("-ip", "--ips", required=True, help="Path to IPs list file.")
     parser.add_argument("-o", "--output", required=True, help="Path to output file.")
     parser.add_argument("-match", "--match", help="Optional: Word or phrase to match in the response.")
-    parser.add_argument("-csv", "--csv", action="store_true", help="Optional: Save output in CSV format.")
+    parser.add_argument("-csv", "--csv", action="store_true", help="Save output in CSV format.")
     args = parser.parse_args()
 
     # Clear the output file if not in CSV mode
