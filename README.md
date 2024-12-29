@@ -44,6 +44,9 @@ A Python tool to match domains with their correct IP addresses by sending HTTP r
   ```
 
   To obtain the IPs, the script can make use of resources like https://search.censys.io/. Subdomains can be gathered using tools like https://github.com/owasp-amass/amass or similar.
+  Extra resources to get IPs:
+  https://viewdns.info/iphistory/?domain=www.example.com
+  https://securitytrails.com/domain/www.example.com/history/a
 
 ### 2. Run the script:
 #### Default Mode (Text Output):
